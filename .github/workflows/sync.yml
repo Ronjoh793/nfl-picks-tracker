@@ -1,41 +1,31 @@
-name: NFL & Sleeper Picks Sync
+name: NFL & Sleeper Picks Automation
 
 on:
   schedule:
-    # 1. Tuesday at 10:00 UTC (Early morning US time):
-    # Detects the new Sleeper week and auto-creates all upcoming matchup rows.
+    # Tuesday 10:00 UTC: Pre-populates matchups for the week
     - cron: '0 10 * * 2'
-
-    # 2. Game Windows (Runs every 30 minutes to capture finals and record winners):
-    # Sunday evening games (17:00 to 23:59 UTC / 10 AM - 4 PM PT)
+    # Game windows: Scores finished games
     - cron: '*/30 17-23 * * 0'
-    # Sunday Night / Monday Night football conclusion (00:00 to 05:00 UTC / 5 PM - 10 PM PT)
     - cron: '*/30 0-5 * * 1,2'
-
-  # Allows you to click a button in GitHub and run the script instantly on demand
   workflow_dispatch:
 
 jobs:
-  sync:
+  run-sync:
     runs-on: ubuntu-latest
     steps:
-      # Step A: Download your repo files onto the runner
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step B: Spin up a fresh Python environment
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          # Removed cache: 'pip' to prevent missing file errors
 
-      # Step C: Install the requests library
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install Dependencies
+        run: pip install requests
 
-      # Step D: Execute the script, injecting repository secrets into environment variables
-      - name: Run sync script
+      - name: Execute Script
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_WEEKS_DB_ID: ${{ secrets.NOTION_WEEKS_DB_ID }}
