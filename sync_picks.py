@@ -18,33 +18,28 @@ def get_current_week():
 
 def get_week_page_id(week_num):
     url = f"https://api.notion.com/v1/databases/{WEEKS_DB_ID}/query"
-    # 1. Fetch all rows without filters to inspect what is actually inside the database
-    res = requests.post(url, headers=HEADERS).json()
-    results = res.get("results", [])
+    response = requests.post(url, headers=HEADERS)
+    res = response.json()
     
+    # Check if Notion returned an error
+    if response.status_code != 200:
+        print(f"Notion API Error ({response.status_code}): {res}")
+        return None
+
+    results = res.get("results", [])
     if not results:
-        print(f"Error: Database query returned 0 rows. Check if NOTION_WEEKS_DB_ID is correct and integration has access.")
+        print(f"Database query succeeded (Status 200), but the database contains 0 rows.")
         return None
 
     target = f"Week {week_num}"
-    
     for row in results:
-        # Find whichever property happens to be the title property
         for prop_name, prop_data in row["properties"].items():
             if prop_data.get("type") == "title":
                 title_list = prop_data.get("title", [])
-                if title_list:
-                    val = title_list[0]["plain_text"].strip()
-                    if val.lower() == target.lower():
-                        return row["id"]
+                if title_list and title_list[0]["plain_text"].strip().lower() == target.lower():
+                    return row["id"]
 
-    # If no match, print what rows were actually detected
-    print(f"Could not find exact match for '{target}'.")
-    print("Found the following entries in NFL Weeks database instead:")
-    for row in results:
-        for p_name, p_data in row["properties"].items():
-            if p_data.get("type") == "title" and p_data.get("title"):
-                print(f" - Column '{p_name}': '{p_data['title'][0]['plain_text']}'")
+    print(f"Connected to database, but could not find row titled '{target}'.")
     return None
 
 def get_week_data(week):
